@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Paper Lab</title>
+<style>
+:root{--bg:#050506;--panel:#0b0809;--ink:#f1e9e9;--mute:#8a7a7c;--red:#ff4d55;--red2:#c23039;--line:#4a1a1e;--win:#3ddc97;--loss:#ff6b72;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:13px/1.45 ui-monospace,"SF Mono",Menlo,Consolas,monospace;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.top{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line)}
+.brand{grid-column:1/-1;display:flex;align-items:center;gap:10px;background:var(--bg);padding:10px 12px}
+.logo{width:30px;height:30px;border-radius:7px;background:var(--red);display:grid;place-items:center;color:#fff;font-weight:700}
+.brand b{font:600 15px system-ui,sans-serif;display:block}.brand small{color:var(--mute);font-size:11px}
+.k{background:var(--bg);padding:8px 12px}.k span{display:block;color:var(--mute);font-size:10px}.k b{font:600 16px ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.hero{position:relative;height:250px;border-bottom:1px solid var(--line);overflow:hidden}
+#hero{position:absolute;inset:0;width:100%;height:100%}
+.card{position:absolute;right:10px;top:10px;width:min(62%,300px);background:rgba(11,8,9,.88);border:1px solid var(--red);border-radius:12px;padding:10px 12px;box-shadow:0 0 24px rgba(255,77,85,.18)}
+.card .lab{display:flex;justify-content:space-between;color:var(--mute);font-size:10px}
+.live{color:var(--red)}
+.bal{font:700 32px system-ui,sans-serif;font-variant-numeric:tabular-nums;margin:2px 0}
+.chip{display:inline-block;background:var(--red);color:#fff;border-radius:999px;padding:1px 9px;font-size:11px;font-weight:600}
+.chip.neg{background:#5a1a1f}
+.card canvas{width:100%;height:44px;display:block;margin-top:6px}
+.sig{position:absolute;left:12px;bottom:10px;font-size:11px;color:var(--mute)}.sig b{color:var(--ink);display:block;font-weight:500}
+.bar{display:flex;gap:8px;padding:10px 12px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+button{background:var(--red);color:#fff;border:0;border-radius:6px;padding:9px 14px;font:600 12px ui-monospace,monospace;cursor:pointer}
+button.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.banner{display:none;margin:10px 12px 0;padding:8px 10px;border:1px solid var(--red);color:var(--loss);border-radius:6px}
+.grid{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line)}
+@media(min-width:720px){.grid{grid-template-columns:1fr 1fr}.hero{height:340px}.top{grid-template-columns:repeat(6,1fr)}.brand{grid-column:auto}}
+.p{background:var(--panel);padding:12px;min-height:140px;border-left:2px solid var(--red2)}
+.p h2{margin:0 0 8px;font:600 11px ui-monospace,monospace;color:var(--mute);display:flex;justify-content:space-between}
+.p h2 i{font-style:normal;color:var(--red)}
+.row{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #1d0f11;padding:3px 0;font-variant-numeric:tabular-nums}
+.pass{color:var(--win)}.fail{color:var(--loss)}
+.scroll{max-height:190px;overflow:auto}
+canvas.c{width:100%;height:110px;display:block}
+input[type=text],input[type=number]{width:100%;background:#120c0d;border:1px solid var(--line);border-radius:5px;color:var(--ink);padding:7px;font:inherit;margin:3px 0 8px}
+label{color:var(--mute);font-size:11px;display:block}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+details summary{cursor:pointer;color:var(--ink)}
+.note{color:var(--mute);font-size:11px;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}td,th{text-align:left;padding:3px 4px;border-bottom:1px solid #1d0f11;white-space:nowrap}th{color:var(--mute);font-weight:500}
+.win{color:var(--win)}.loss{color:var(--loss)}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand"><div class="logo">~</div><div><b>PAPER LAB / trading</b><small>simulated · walang tunay na pera</small></div></div>
+  <div class="k"><span>token</span><b id="kTok">-</b></div>
+  <div class="k"><span>signals</span><b id="kSig">0</b></div>
+  <div class="k"><span>open</span><b id="kOpen">0</b></div>
+  <div class="k"><span>trades</span><b id="kTr">0</b></div>
+  <div class="k"><span>session</span><b id="kSes">0h</b></div>
+</div>
+
+<div class="banner" id="banner"></div>
+
+<div class="hero">
+  <canvas id="hero"></canvas>
+  <div class="card">
+    <div class="lab"><span>PAPER BALANCE</span><span class="live">● LIVE</span></div>
+    <div class="bal" id="bal">$0</div>
+    <span class="chip" id="chip">0%</span> <span id="chipAbs" style="color:var(--mute)"></span>
+    <canvas id="eq"></canvas>
+  </div>
+  <div class="sig">signal · <b id="sigTxt">naghihintay</b></div>
+</div>
+
+<div class="bar">
+  <button id="buy">Buy (paper)</button>
+  <button class="alt" id="auto">Auto: OFF</button>
+  <button class="alt" id="reset">Reset</button>
+  <span id="status" style="color:var(--mute);align-self:center;font-size:11px">Hindi pa nagsisimula.</span>
+</div>
+
+<div class="grid">
+  <div class="p"><h2>ENTRY / PRICE <i id="pxNow">-</i></h2><canvas class="c" id="pxc"></canvas><div class="note">Pulang linya = stop ng unang posisyon.</div></div>
+  <div class="p"><h2>STATS <i>paper</i></h2><div id="stats"></div></div>
+  <div class="p"><h2>FILTERS <i id="fVerdict">-</i></h2>
+    <label>Mint address</label><input type="text" id="mint" value="So11111111111111111111111111111111111111112">
+    <label>RPC URL (Helius/QuickNode mo)</label><input type="text" id="rpc" value="https://api.mainnet-beta.solana.com">
+    <button class="alt" id="check">Check token</button>
+    <div class="scroll" id="filterOut" style="margin-top:8px"></div></div>
+  <div class="p"><h2>OPEN POSITIONS</h2><div class="scroll"><table id="open"></table></div></div>
+  <div class="p"><h2>SIGNAL FEED <i>log</i></h2><div class="scroll" id="log"></div></div>
+  <div class="p"><details><summary>RISK SETTINGS</summary><div class="sg" id="settings" style="margin-top:8px"></div>
+    <p class="note">Size = (balance x risk%) / stop%. Naka-save sa browser mo.</p></details></div>
+</div>
+
+<script>
+const DEF={start:100,risk:1,sl:15,ptp:50,pfrac:50,trail:15,daily:4,maxpos:2,maxloss:3,fee:2,minLiq:10000,minVol:20000,minAge:10,top1:10,top10:40};
+const LAB={start:"Starting balance ($)",risk:"Risk per trade (%)",sl:"Stop-loss (%)",ptp:"Partial TP sa +%",pfrac:"Ibebenta sa partial (%)",trail:"Trailing stop (%)",daily:"Daily loss limit (%)",maxpos:"Max open positions",maxloss:"Kill switch: sunod na talo",fee:"Fees + slippage (%)",minLiq:"Min liquidity ($)",minVol:"Min 24h volume ($)",minAge:"Min edad (min)",top1:"Max top holder (%)",top10:"Max top 10 (%)"};
+const KEY="paperlab.v1",$=id=>document.getElementById(id);
+const today=()=>new Date().toISOString().slice(0,10);
+const fresh=()=>({cfg:{...DEF},balance:DEF.start,dayStart:DEF.start,day:today(),peak:DEF.start,maxDD:0,lossRow:0,halted:false,auto:false,pos:[],trades:[],log:[],eq:[DEF.start],signals:0,t0:Date.now()});
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.cfg)return{...fresh(),...x,cfg:{...DEF,...x.cfg}}}catch(e){}return fresh()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+let S=load(),history=[],price=null,filterOk=null,speed=1;
+const usd=n=>(n<0?"-$":"$")+Math.abs(n).toFixed(2);
+const say=m=>{S.log.unshift(new Date().toLocaleTimeString()+"  "+m);S.log=S.log.slice(0,80)};
+
+$("settings").innerHTML=Object.keys(DEF).map(k=>`<div><label>${LAB[k]}</label><input type="number" step="any" data-k="${k}"></div>`).join("");
+document.querySelectorAll("[data-k]").forEach(i=>{i.value=S.cfg[i.dataset.k];i.onchange=()=>{const v=parseFloat(i.value);if(!isNaN(v))S.cfg[i.dataset.k]=v;save()}});
+
+async function fetchPrice(){
+  const r=await fetch("https://api.dexscreener.com/latest/dex/tokens/"+$("mint").value.trim());
+  const j=await r.json(),ps=(j.pairs||[]).filter(p=>p.chainId==="solana");
+  if(!ps.length)throw new Error("Walang pair na nahanap");
+  const b=ps.sort((a,c)=>((c.liquidity||{}).usd||0)-((a.liquidity||{}).usd||0))[0];
+  return{price:parseFloat(b.priceUsd),liq:(b.liquidity||{}).usd||0,vol:(b.volume||{}).h24||0,age:b.pairCreatedAt?(Date.now()-b.pairCreatedAt)/6e4:0,sym:(b.baseToken||{}).symbol||"?"};
+}
+async function rpc(method,params){
+  const r=await fetch($("rpc").value.trim(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:1,method,params})});
+  const j=await r.json();if(j.error)throw new Error(j.error.message);return j.result;
+}
+async function checkToken(){
+  const c=S.cfg,mint=$("mint").value.trim(),out=[];let ok=true;
+  const v=(p,m)=>{out.push(`<div class="row ${p?"pass":"fail"}"><span>${m}</span><span>${p?"PASS":"FAIL"}</span></div>`);ok=ok&&p};
+  try{
+    const a=(await rpc("getAccountInfo",[mint,{encoding:"jsonParsed"}])).value.data.parsed.info;
+    v(!a.mintAuthority,"mint authority "+(a.mintAuthority?"ACTIVE":"revoked"));
+    v(!a.freezeAuthority,"freeze authority "+(a.freezeAuthority?"ACTIVE":"revoked"));
+    const sup=parseFloat((await rpc("getTokenSupply",[mint])).value.uiAmount);
+    const big=(await rpc("getTokenLargestAccounts",[mint])).value.map(x=>100*(x.uiAmount||0)/sup);
+    const t10=big.slice(0,10).reduce((s,x)=>s+x,0);
+    v(big[0]<=c.top1,"top holder "+big[0].toFixed(1)+"% (kasama pool)");
+    v(t10<=c.top10,"top 10 "+t10.toFixed(1)+"%");
+    const m=await fetchPrice();
+    v(m.liq>=c.minLiq,"liquidity $"+Math.round(m.liq).toLocaleString());
+    v(m.vol>=c.minVol,"volume 24h $"+Math.round(m.vol).toLocaleString());
+    v(m.age>=c.minAge,"edad "+Math.round(m.age)+" min");
+  }catch(e){v(false,"error: "+e.message)}
+  filterOk=ok;$("filterOut").innerHTML=out.join("");
+  $("fVerdict").textContent=ok?"PASSED":"REJECTED";say("Filters: "+(ok?"PASSED":"REJECTED"));save();render();
+}
+
+function canTrade(){
+  const c=S.cfg;
+  if(S.day!==today()){S.day=today();S.dayStart=S.balance}
+  if(S.halted)return "naka-halt (kill switch)";
+  if(S.pos.length>=c.maxpos)return "puno na ang max positions";
+  if((S.dayStart-S.balance)/S.dayStart*100>=c.daily)return "naabot ang daily loss limit";
+  if(filterOk===false)return "bagsak ang token filters";
+  return null;
+}
+function openPos(){
+  const why=canTrade();if(why){say("Hindi bumili: "+why);return render()}
+  if(!price)return;
+  const c=S.cfg,size=S.balance*c.risk/100/(c.sl/100);
+  S.pos.push({entry:price,size,stop:price*(1-c.sl/100),peak:price,partial:false,realized:0});
+  say(`BUY ${usd(size)} @ ${Number(price.toPrecision(5))}`);save();render();
+}
+function checkExits(){
+  const c=S.cfg;
+  for(const p of [...S.pos]){
+    p.peak=Math.max(p.peak,price);p.stop=Math.max(p.stop,p.peak*(1-c.trail/100));
+    if(!p.partial&&price>=p.entry*(1+c.ptp/100)){
+      const ch=p.size*c.pfrac/100,g=ch*((c.ptp-c.fee)/100);
+      p.realized+=g;p.size-=ch;p.partial=true;p.stop=Math.max(p.stop,p.entry);
+      say(`PARTIAL SELL ${usd(ch)} · locked ${usd(g)}`);
+    }
+    if(price<=p.stop){
+      const pnl=p.realized+p.size*((p.stop/p.entry-1)-c.fee/100);
+      S.balance+=pnl;S.trades.push(pnl);S.pos.splice(S.pos.indexOf(p),1);
+      S.lossRow=pnl<0?S.lossRow+1:0;S.peak=Math.max(S.peak,S.balance);
+      S.maxDD=Math.max(S.maxDD,(S.peak-S.balance)/S.peak);
+      say(`CLOSE ${usd(pnl)} · balance ${usd(S.balance)}`);
+      if(S.lossRow>=c.maxloss){S.halted=true;say("KILL SWITCH: sunod-sunod na talo")}
+    }
+  }
+}
+const signal=()=>history.length>=2&&history[history.length-1]>history[history.length-2]*1.003; // DUMMY: palitan mo
+
+async function tick(){
+  try{
+    const m=await fetchPrice();price=m.price;$("kTok").textContent=m.sym;
+    const prev=history[history.length-1];history.push(price);history=history.slice(-60);
+    if(prev)speed=1+Math.min(Math.abs(price/prev-1)*150,5);
+    checkExits();
+    if(signal()){S.signals++;$("sigTxt").textContent="momentum +0.3% · "+m.sym;if(S.auto)openPos()}
+    S.eq.push(S.balance);S.eq=S.eq.slice(-200);
+    $("status").textContent="update: "+new Date().toLocaleTimeString();
+  }catch(e){$("status").textContent="error sa presyo: "+e.message}
+  save();render();
+}
+
+// ---- drawing
+function spark(id,data,color,stop){
+  const c=$(id),d=devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;
+  const x=c.getContext("2d");x.scale(d,d);const w=r.width,h=r.height;
+  if(data.length<2){x.fillStyle="#8a7a7c";x.font="11px monospace";x.fillText("naghihintay ng data",4,h/2);return}
+  let lo=Math.min(...data),hi=Math.max(...data);if(stop){lo=Math.min(lo,stop);hi=Math.max(hi,stop)}
+  if(hi===lo){hi+=1;lo-=1}
+  const Y=v=>h-4-(v-lo)/(hi-lo)*(h-8),X=i=>i/(data.length-1)*(w-4)+2;
+  x.beginPath();data.forEach((v,i)=>i?x.lineTo(X(i),Y(v)):x.moveTo(X(i),Y(v)));
+  x.strokeStyle=color;x.lineWidth=1.6;x.stroke();
+  x.lineTo(X(data.length-1),h);x.lineTo(X(0),h);x.closePath();x.fillStyle=color+"22";x.fill();
+  if(stop){x.setLineDash([4,4]);x.strokeStyle="#ff4d55";x.beginPath();x.moveTo(0,Y(stop));x.lineTo(w,Y(stop));x.stroke();x.setLineDash([])}
+}
+const hc=$("hero"),hx=hc.getContext("2d"),still=matchMedia("(prefers-reduced-motion:reduce)").matches;
+let streaks=[];
+function sizeHero(){const r=hc.getBoundingClientRect(),d=devicePixelRatio||1;hc.width=r.width*d;hc.height=r.height*d;
+  streaks=Array.from({length:130},()=>({x:Math.random(),y:Math.random(),l:.06+Math.random()*.28,s:.15+Math.random()*.85,a:.15+Math.random()*.6}))}
+function frame(){
+  const w=hc.width,h=hc.height;hx.clearRect(0,0,w,h);
+  for(const s of streaks){
+    if(!still){s.x-=s.s*.004*speed;if(s.x+s.l<0){s.x=1+Math.random()*.2;s.y=Math.random()}}
+    const g=hx.createLinearGradient(s.x*w,0,(s.x+s.l)*w,0);
+    g.addColorStop(0,"rgba(255,77,85,0)");g.addColorStop(1,`rgba(255,${120+s.s*100|0},${110+s.s*90|0},${s.a})`);
+    hx.strokeStyle=g;hx.lineWidth=(1+s.s)*(devicePixelRatio||1)*.8;
+    hx.beginPath();hx.moveTo(s.x*w,s.y*h);hx.lineTo((s.x+s.l)*w,s.y*h);hx.stroke();
+  }
+  speed+=(1-speed)*.02;
+  if(!still)requestAnimationFrame(frame);
+}
+
+function render(){
+  const gain=S.balance-S.cfg.start,pct=gain/S.cfg.start*100;
+  $("bal").textContent=usd(S.balance);
+  const ch=$("chip");ch.textContent=(pct>=0?"▲ +":"▼ ")+pct.toFixed(1)+"%";ch.className="chip"+(pct<0?" neg":"");
+  $("chipAbs").textContent=(gain>=0?"+":"")+usd(gain);
+  $("kSig").textContent=S.signals;$("kOpen").textContent=S.pos.length;$("kTr").textContent=S.trades.length;
+  $("kSes").textContent=Math.floor((Date.now()-S.t0)/36e5)+"h";
+  $("auto").textContent="Auto: "+(S.auto?"ON":"OFF");
+  $("pxNow").textContent=price?"$"+Number(price.toPrecision(6)):"-";
+  const b=$("banner");if(S.halted){b.style.display="block";b.textContent="Kill switch: naka-halt ang bot. I-reset para magsimula ulit."}else b.style.display="none";
+  $("open").innerHTML="<tr><th>entry</th><th>laki</th><th>stop</th><th>partial</th></tr>"+(S.pos.length?S.pos.map(p=>`<tr><td>${Number(p.entry.toPrecision(5))}</td><td>${usd(p.size)}</td><td>${Number(p.stop.toPrecision(5))}</td><td>${p.partial?"oo":"-"}</td></tr>`).join(""):'<tr><td colspan="4" style="color:var(--mute)">wala pa</td></tr>');
+  const t=S.trades,n=t.length,w=t.filter(x=>x>0),l=t.filter(x=>x<=0);
+  const wr=n?w.length/n:0,aw=w.length?w.reduce((a,b)=>a+b,0)/w.length:0,al=l.length?l.reduce((a,b)=>a+b,0)/l.length:0;
+  const ex=n?wr*aw+(1-wr)*al:0,tot=t.reduce((a,b)=>a+b,0);
+  const R=(k,v)=>`<div class="row"><span style="color:var(--mute)">${k}</span><span>${v}</span></div>`;
+  $("stats").innerHTML=R("trades",n+(n<100?" (kulang pa sa 100)":""))+R("win rate",n?(wr*100).toFixed(0)+"%":"-")+R("avg win / loss",usd(aw)+" / "+usd(al))+R("expectancy",`<b class="${ex>=0?"win":"loss"}">${usd(ex)}</b>`)+R("max drawdown",(S.maxDD*100).toFixed(1)+"%")+R("kabuuang P&L",`<b class="${tot>=0?"win":"loss"}">${usd(tot)}</b>`);
+  $("log").innerHTML=S.log.map(x=>`<div class="row"><span>${x}</span></div>`).join("")||'<div class="row" style="color:var(--mute)">wala pang aksyon</div>';
+  spark("eq",S.eq,"#ff4d55");spark("pxc",history,"#ff6b72",S.pos[0]&&S.pos[0].stop);
+}
+
+$("buy").onclick=openPos;$("check").onclick=checkToken;
+$("auto").onclick=()=>{S.auto=!S.auto;save();render()};
+$("reset").onclick=()=>{if(confirm("I-reset ang balance, trades, at log?")){const c=S.cfg;S=fresh();S.cfg=c;S.balance=S.dayStart=S.peak=c.start;S.eq=[c.start];history=[];save();render()}};
+addEventListener("resize",()=>{sizeHero();render()});
+sizeHero();frame();render();tick();setInterval(tick,15000);
+</script>
+</body>
+</html>
